@@ -1,6 +1,7 @@
 package fi.dy.masa.itemscroller;
 
 import fi.dy.masa.itemscroller.config.Configs;
+import fi.dy.masa.itemscroller.epserv.ChatListener;
 import fi.dy.masa.itemscroller.event.InputHandler;
 import fi.dy.masa.itemscroller.event.KeybindCallbacks;
 import fi.dy.masa.itemscroller.event.WorldLoadListener;
@@ -17,6 +18,7 @@ public class InitHandler implements IInitializationHandler
     {
         ConfigManager.getInstance().registerConfigHandler(Reference.MOD_ID, new Configs());
 
+        ChatListener.register();
         InputHandler handler = new InputHandler();
         InputEventHandler.getKeybindManager().registerKeybindProvider(handler);
         InputEventHandler.getInputManager().registerKeyboardInputHandler(handler);

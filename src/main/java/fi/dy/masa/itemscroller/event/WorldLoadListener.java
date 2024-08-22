@@ -9,7 +9,6 @@ import fi.dy.masa.malilib.interfaces.IWorldLoadListener;
 import fi.dy.masa.itemscroller.config.Configs;
 import fi.dy.masa.itemscroller.recipes.RecipeStorage;
 import fi.dy.masa.itemscroller.util.ClickPacketBuffer;
-import fi.dy.masa.itemscroller.villager.VillagerDataStorage;
 
 public class WorldLoadListener implements IWorldLoadListener
 {
@@ -20,7 +19,6 @@ public class WorldLoadListener implements IWorldLoadListener
         if (worldBefore != null && worldAfter == null)
         {
             this.writeData(worldBefore.getRegistryManager());
-            VillagerDataStorage.getInstance().writeToDisk();
         }
     }
 
@@ -33,7 +31,6 @@ public class WorldLoadListener implements IWorldLoadListener
         if (worldBefore == null && worldAfter != null)
         {
             this.readStoredData(worldAfter.getRegistryManager());
-            VillagerDataStorage.getInstance().readFromDisk();
         }
 
         // Logging out

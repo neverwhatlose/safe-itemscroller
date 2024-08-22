@@ -19,7 +19,6 @@ import fi.dy.masa.itemscroller.util.ClickPacketBuffer;
 import fi.dy.masa.itemscroller.util.InputUtils;
 import fi.dy.masa.itemscroller.util.InventoryUtils;
 import fi.dy.masa.itemscroller.util.MoveAction;
-import fi.dy.masa.itemscroller.villager.VillagerDataStorage;
 import fi.dy.masa.malilib.gui.GuiBase;
 import fi.dy.masa.malilib.hotkeys.IHotkey;
 import fi.dy.masa.malilib.hotkeys.IKeybindManager;
@@ -149,18 +148,6 @@ public class InputHandler implements IKeybindProvider, IKeyboardInputHandler, IM
             final int mouseX = fi.dy.masa.malilib.util.InputUtils.getMouseX();
             final int mouseY = fi.dy.masa.malilib.util.InputUtils.getMouseY();
             Screen screen = GuiUtils.getCurrentScreen();
-
-            if (Configs.Toggles.VILLAGER_TRADE_FEATURES.getBooleanValue())
-            {
-                VillagerDataStorage storage = VillagerDataStorage.getInstance();
-
-                if (screen == null && mc.crosshairTarget != null &&
-                    mc.crosshairTarget.getType() == HitResult.Type.ENTITY &&
-                    ((EntityHitResult) mc.crosshairTarget).getEntity() instanceof MerchantEntity)
-                {
-                    storage.setLastInteractedUUID(((EntityHitResult) mc.crosshairTarget).getEntity().getUuid());
-                }
-            }
 
             if (screen instanceof HandledScreen &&
                 (screen instanceof CreativeInventoryScreen) == false &&

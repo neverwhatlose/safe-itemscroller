@@ -56,8 +56,6 @@ import fi.dy.masa.itemscroller.recipes.CraftingHandler;
 import fi.dy.masa.itemscroller.recipes.CraftingHandler.SlotRange;
 import fi.dy.masa.itemscroller.recipes.RecipePattern;
 import fi.dy.masa.itemscroller.recipes.RecipeStorage;
-import fi.dy.masa.itemscroller.villager.VillagerDataStorage;
-import fi.dy.masa.itemscroller.villager.VillagerUtils;
 import fi.dy.masa.malilib.util.GuiUtils;
 
 public class InventoryUtils
@@ -243,7 +241,6 @@ public class InventoryUtils
         }
 
         // Villager handling only happens when scrolling over the trade output slot
-        boolean villagerHandling = Configs.Toggles.SCROLL_VILLAGER.getBooleanValue() && gui instanceof MerchantScreen && slot instanceof TradeOutputSlot;
         boolean craftingHandling = Configs.Toggles.CRAFTING_FEATURES.getBooleanValue() && isCraftingSlot(gui, slot);
         boolean keyActiveMoveEverything = Hotkeys.MODIFIER_MOVE_EVERYTHING.getKeybind().isKeybindHeld();
         boolean keyActiveMoveMatching = Hotkeys.MODIFIER_MOVE_MATCHING.getKeybind().isKeybindHeld();
@@ -265,7 +262,7 @@ public class InventoryUtils
         }
 
         // Check that the slot is valid, (don't require items in case of the villager output slot or a crafting slot)
-        if (isValidSlot(slot, gui, villagerHandling == false && craftingHandling == false) == false)
+        if (isValidSlot(slot, gui,  craftingHandling == false) == false)
         {
             return false;
         }
@@ -273,11 +270,6 @@ public class InventoryUtils
         if (craftingHandling)
         {
             return tryMoveItemsCrafting(recipes, slot, gui, moveToOtherInventory, keyActiveMoveStacks, keyActiveMoveEverything);
-        }
-
-        if (villagerHandling)
-        {
-            return tryMoveItemsVillager((MerchantScreen) gui, slot, moveToOtherInventory, keyActiveMoveStacks);
         }
 
         if ((Configs.Toggles.SCROLL_SINGLE.getBooleanValue() == false && nonSingleMove == false) ||
@@ -709,122 +701,6 @@ public class InventoryUtils
         {
             sourceSlot = new WeakReference<>(sourceSlotCandidate.get());
         }
-    }
-
-    private static boolean tryMoveItemsVillager(MerchantScreen gui,
-                                                Slot slot,
-                                                boolean moveToOtherInventory,
-                                                boolean fullStacks)
-    {
-        if (fullStacks)
-        {
-            // Try to fill the merchant's buy slots from the player inventory
-            if (moveToOtherInventory == false)
-            {
-                tryMoveItemsToMerchantBuySlots(gui, true);
-            }
-            // Move items from sell slot to player inventory
-            else if (slot.hasStack())
-            {
-                tryMoveStacks(slot, gui, true, true, true);
-            }
-            // Scrolling over an empty output slot, clear the buy slots
-            else
-            {
-                tryMoveStacks(slot, gui, false, true, false);
-            }
-        }
-        else
-        {
-            // Scrolling items from player inventory into merchant buy slots
-            if (moveToOtherInventory == false)
-            {
-                tryMoveItemsToMerchantBuySlots(gui, false);
-            }
-            // Scrolling items from this slot/inventory into the other inventory
-            else if (slot.hasStack())
-            {
-                moveOneSetOfItemsFromSlotToPlayerInventory(gui, slot);
-            }
-        }
-
-        return false;
-    }
-
-    public static void villagerClearTradeInputSlots()
-    {
-        if (GuiUtils.getCurrentScreen() instanceof MerchantScreen merchantGui)
-        {
-            Slot slot = merchantGui.getScreenHandler().getSlot(0);
-
-            if (slot.hasStack())
-            {
-                shiftClickSlot(merchantGui, slot.id);
-            }
-
-            slot = merchantGui.getScreenHandler().getSlot(1);
-
-            if (slot.hasStack())
-            {
-                shiftClickSlot(merchantGui, slot.id);
-            }
-        }
-    }
-
-    public static void villagerTradeEverythingPossibleWithTrade(int visibleIndex)
-    {
-        if (GuiUtils.getCurrentScreen() instanceof MerchantScreen merchantGui)
-        {
-            MerchantScreenHandler handler = merchantGui.getScreenHandler();
-            Slot slot = handler.getSlot(2);
-            ItemStack sellItem = handler.getRecipes().get(visibleIndex).getSellItem().copy();
-
-            while (true)
-            {
-                VillagerUtils.switchToTradeByVisibleIndex(visibleIndex);
-                //tryMoveItemsToMerchantBuySlots(merchantGui, true);
-
-                // Not a valid recipe
-                //if (slot.hasStack() == false)
-                if (areStacksEqual(sellItem, slot.getStack()) == false)
-                {
-                    break;
-                }
-
-                shiftClickSlot(merchantGui, slot.id);
-
-                // No room in player inventory
-                if (slot.hasStack())
-                {
-                    break;
-                }
-            }
-
-            villagerClearTradeInputSlots();
-        }
-    }
-
-    public static boolean villagerTradeEverythingPossibleWithAllFavoritedTrades()
-    {
-        Screen screen = GuiUtils.getCurrentScreen();
-
-        if (screen instanceof MerchantScreen)
-        {
-            MerchantScreenHandler handler = ((MerchantScreen) screen).getScreenHandler();
-            IntArrayList favorites = VillagerDataStorage.getInstance().getFavoritesForCurrentVillager(handler).favorites;
-
-            for (int index = 0; index < favorites.size(); ++index)
-            {
-                VillagerUtils.switchToTradeByVisibleIndex(index);
-                villagerTradeEverythingPossibleWithTrade(index);
-            }
-
-            villagerClearTradeInputSlots();
-
-            return true;
-        }
-
-        return false;
     }
 
     private static boolean tryMoveSingleItemToOtherInventory(Slot slot,
