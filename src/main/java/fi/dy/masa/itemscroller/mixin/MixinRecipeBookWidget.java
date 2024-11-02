@@ -11,6 +11,7 @@ import fi.dy.masa.itemscroller.util.InventoryUtils;
 @Mixin(RecipeBookWidget.class)
 public class MixinRecipeBookWidget
 {
+    /*
     @Inject(method = "update", at = @At("HEAD"), cancellable = true)
     private void onUpdate(CallbackInfo ci)
     {
@@ -19,4 +20,5 @@ public class MixinRecipeBookWidget
             ci.cancel();
         }
     }
+     */
 }
