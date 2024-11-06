@@ -39,7 +39,10 @@ public class RecipePattern
     private ItemStack[] recipe = new ItemStack[9];
     private RecipeEntry<?> vanillaRecipe;
     private NetworkRecipeId networkRecipeId;
+    private NetworkRecipeId ghostNetworkRecipeId;
     private RecipeDisplayEntry displayEntry;
+    private long lastMassCraft;
+    private long altTimeoutMillis = 6000L;
 
     public RecipePattern()
     {
@@ -60,7 +63,9 @@ public class RecipePattern
         this.result = InventoryUtils.EMPTY_STACK;
         this.vanillaRecipe = null;
         this.networkRecipeId = null;
+        this.ghostNetworkRecipeId = null;
         this.displayEntry = null;
+        this.lastMassCraft = -1;
     }
 
     public void ensureRecipeSizeAndClearRecipe(int size)
@@ -133,13 +138,39 @@ public class RecipePattern
             return;
         }
 
-        this.storeNetworkRecipeId(pair.getLeft());
+        this.storeNetworkRecipeId(pair.getLeft(), false);
         this.storeRecipeDisplayEntry(pair.getRight());
     }
 
-    public void storeNetworkRecipeId(NetworkRecipeId id)
+    public void storeNetworkRecipeId(NetworkRecipeId id, boolean saveGhost)
     {
+        if (this.networkRecipeId != null && id.index() != this.networkRecipeId.index() && saveGhost)
+        {
+            this.storeGhostNetworkRecipeId(this.networkRecipeId);
+        }
+        else
+        {
+            this.ghostNetworkRecipeId = null;
+        }
+
         this.networkRecipeId = id;
+    }
+
+    public void storeGhostNetworkRecipeId(NetworkRecipeId id)
+    {
+        this.ghostNetworkRecipeId = id;
+    }
+
+    public void swapGhostNetworkRecipeId()
+    {
+        // The 'Ghost' RecipeId is usually a higher index() number than the real recipe, or the "Inverse" recipe of the one being crafted.
+        // We just need to be able to handle the swap at the correct time.
+        if (this.getGhostNetworkRecipeId() != null)
+        {
+            NetworkRecipeId last = this.getNetworkRecipeId();
+            this.storeNetworkRecipeId(this.getGhostNetworkRecipeId(), false);
+            this.storeGhostNetworkRecipeId(last);
+        }
     }
 
     public void storeRecipeDisplayEntry(RecipeDisplayEntry entry)
@@ -152,40 +183,49 @@ public class RecipePattern
         return this.networkRecipeId;
     }
 
+    public @Nullable NetworkRecipeId getGhostNetworkRecipeId()
+    {
+        return this.ghostNetworkRecipeId;
+    }
+
     public @Nullable RecipeDisplayEntry getRecipeDisplayEntry()
     {
         return this.displayEntry;
     }
 
-    public Pair<NetworkRecipeId, RecipeDisplayEntry> matchClientRecipeBook(MinecraftClient mc)
+    public @Nullable Pair<NetworkRecipeId, RecipeDisplayEntry> matchClientRecipeBook(MinecraftClient mc)
     {
-        AtomicReference<Pair<NetworkRecipeId, RecipeDisplayEntry>> pair = new AtomicReference<>();
+        Pair<NetworkRecipeId, RecipeDisplayEntry> pair = null;
 
         if (mc.player == null || mc.world == null)
         {
             return null;
         }
-
         ClientRecipeBook recipeBook = mc.player.getRecipeBook();
         ContextParameterMap ctx = SlotDisplayContexts.createParameters(mc.world);
         Map<NetworkRecipeId, RecipeDisplayEntry> recipeMap = ((IMixinClientRecipeBook) recipeBook).itemscroller_getRecipeMap();
         List<ItemStack> recipeStacks = this.combineStacks(Arrays.stream(this.getRecipeItems()).toList(), 3);
 
-        recipeMap.forEach((id, entry) ->
+        if (recipeMap.size() < 1)
         {
-            List<ItemStack> stacks = entry.getStacks(ctx);
+            return null;
+        }
 
-            // Combine Stacks so that they can equal
+        for (NetworkRecipeId id : recipeMap.keySet())
+        {
+            List<ItemStack> stacks = recipeMap.get(id).getStacks(ctx);
+
             if (this.compareRecipeStacks(recipeStacks, this.combineStacks(stacks, 3)))
             {
-                pair.set(Pair.of(id, entry));
+                pair = Pair.of(id, recipeMap.get(id));
+                return pair;
             }
-        });
+        }
 
-        return pair.get();
+        return null;
     }
 
-    private List<ItemStack> combineStacks(List<ItemStack> stacks, int iterations)
+    public static List<ItemStack> combineStacks(List<ItemStack> stacks, int iterations)
     {
         if (iterations > 3 || iterations < 1)
         {
@@ -197,14 +237,14 @@ public class RecipePattern
 
         while (i < iterations)
         {
-            list = this.combineStacksEach(list);
+            list = combineStacksEach(list);
             i++;
         }
 
         return list;
     }
 
-    private List<ItemStack> combineStacksEach(List<ItemStack> stacks)
+    private static List<ItemStack> combineStacksEach(List<ItemStack> stacks)
     {
         List<ItemStack> list = new ArrayList<>();
         ItemStack previous = ItemStack.EMPTY;
@@ -270,16 +310,21 @@ public class RecipePattern
             ItemStack l = left.get(i);
             ItemStack r = right.get(i);
 
+            //System.out.printf("compare() [%d] left [%s] / right [%s] --> ", i, l.toString(), r.toString());
+
             if (ItemStack.areItemsEqual(l, r) == false)
             {
+                //System.out.print(" not equal\n");
                 return false;
             }
             else if (l.getCount() != r.getCount())
             {
+                //System.out.print(" count not equal\n");
                 return false;
             }
         }
 
+        //System.out.print(" PASS\n");
         return true;
     }
 
@@ -297,12 +342,16 @@ public class RecipePattern
 
         Pair<NetworkRecipeId, RecipeDisplayEntry> pair = this.matchClientRecipeBook(mc);
 
-        if (pair == null || pair.getLeft() == null || pair.getRight() == null)
+        if (pair == null || pair.getLeft() == null)
         {
             return false;
         }
 
-        if (pair.getLeft() == this.getNetworkRecipeId())
+        if (this.getNetworkRecipeId() != null && pair.getLeft().index() == this.getNetworkRecipeId().index())
+        {
+            return true;
+        }
+        else if (this.getGhostNetworkRecipeId() != null && pair.getLeft().index() == this.getGhostNetworkRecipeId().index())
         {
             return true;
         }
@@ -329,7 +378,7 @@ public class RecipePattern
         return false;
     }
 
-    public void storeCraftingRecipe(Slot slot, HandledScreen<? extends ScreenHandler> gui, boolean clearIfEmpty)
+    public void storeCraftingRecipe(Slot slot, HandledScreen<? extends ScreenHandler> gui, boolean clearIfEmpty, boolean fromKeybind, MinecraftClient mc)
     {
         SlotRange range = CraftingHandler.getCraftingGridSlots(gui, slot);
 
@@ -338,18 +387,22 @@ public class RecipePattern
             if (slot.hasStack())
             {
                 int gridSize = range.getSlotCount();
-                int numSlots = gui.getScreenHandler().slots.size();
 
-                this.ensureRecipeSizeAndClearRecipe(gridSize);
-
-                for (int i = 0, s = range.getFirst(); i < gridSize && s < numSlots; i++, s++)
+                if (fromKeybind)
                 {
-                    Slot slotTmp = gui.getScreenHandler().getSlot(s);
-                    this.recipe[i] = slotTmp.hasStack() ? slotTmp.getStack().copy() : InventoryUtils.EMPTY_STACK;
+                    // Slots are only populated from the Keybinds Callback
+                    int numSlots = gui.getScreenHandler().slots.size();
+                    this.ensureRecipeSizeAndClearRecipe(gridSize);
+
+                    for (int i = 0, s = range.getFirst(); i < gridSize && s < numSlots; i++, s++)
+                    {
+                        Slot slotTmp = gui.getScreenHandler().getSlot(s);
+                        this.recipe[i] = slotTmp.hasStack() ? slotTmp.getStack().copy() : InventoryUtils.EMPTY_STACK;
+                    }
                 }
 
                 this.result = slot.getStack().copy();
-                this.lookupVanillaRecipe(MinecraftClient.getInstance().world);
+                this.lookupVanillaRecipe(mc.world);
                 this.storeSelectedRecipeIdFromGui(gui);
             }
             else if (clearIfEmpty)
@@ -376,7 +429,7 @@ public class RecipePattern
                     ClientRecipeBook recipeBook = mc.player.getRecipeBook();
                     Map<NetworkRecipeId, RecipeDisplayEntry> recipeMap = ((IMixinClientRecipeBook) recipeBook).itemscroller_getRecipeMap();
 
-                    this.storeNetworkRecipeId(id);
+                    this.storeNetworkRecipeId(id, false);
 
                     if (recipeMap.containsKey(id))
                     {
@@ -488,6 +541,21 @@ public class RecipePattern
     public ItemStack[] getRecipeItems()
     {
         return this.recipe;
+    }
+
+    public boolean hasRecipeItems()
+    {
+        boolean empty = true;
+
+        for (int i = 0; i < this.getRecipeLength(); i++)
+        {
+            if (this.getRecipeItems()[i].isEmpty() == false)
+            {
+                empty = false;
+            }
+        }
+
+        return empty;
     }
 
     public boolean isValid()
