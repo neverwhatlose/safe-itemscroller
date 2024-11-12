@@ -1422,20 +1422,6 @@ public class InventoryUtils
         return clearedAll;
     }
 
-    /*
-    public static void clearCraftingGridCursorStack(HandledScreen<? extends ScreenHandler> gui, MinecraftClient mc)
-    {
-        ItemStack stack = gui.getScreenHandler().getCursorStack();
-        PlayerEntity player = mc.player;
-
-        if (stack.isEmpty() == false && player != null)
-        {
-            ((IMixinScreenHandler) gui).itemscroller_offerOrDropStack(player, stack);
-            gui.getScreenHandler().setCursorStack(ItemStack.EMPTY);
-        }
-    }
-     */
-
     private static boolean tryMoveItemsToCraftingGridSlots(RecipePattern recipe,
                                                            Slot slot,
                                                            HandledScreen<? extends ScreenHandler> gui,
