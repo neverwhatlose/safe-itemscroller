@@ -2642,7 +2642,7 @@ public class InventoryUtils
         {
             return;
         }
-        System.out.printf("sort - focusedSlot[%d]: %s\n", focusedSlot.id, focusedSlot.hasStack() ? focusedSlot.getStack().getName().getString() : "<EMPTY>");
+        //System.out.printf("sort - focusedSlot[%d]: %s\n", focusedSlot.id, focusedSlot.hasStack() ? focusedSlot.getStack().getName().getString() : "<EMPTY>");
         ScreenHandler container = gui.getScreenHandler();
         int limit = container.slots.size();
 
