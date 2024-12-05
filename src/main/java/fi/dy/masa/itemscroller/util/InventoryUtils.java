@@ -85,6 +85,8 @@ public class InventoryUtils
     private static ItemGroup.DisplayContext displayContext;
 
     private static Pair<Integer, Integer> lastSwapTry = Pair.of(-1, -1);
+    private static int repeatedSwaps = 0;
+    private static int MAX_REPEATED = 5;
     private static List<Pair<Integer, Integer>> hotbarSwaps = new ArrayList<>();
 
     public static void setInhibitCraftingOutputUpdate(boolean inhibitUpdate)
@@ -2640,7 +2642,7 @@ public class InventoryUtils
         {
             return;
         }
-        //System.out.printf("sort - focusedSlot[%d]: %s\n", focusedSlot.id, focusedSlot.hasStack() ? focusedSlot.getStack().getName().getString() : "<EMPTY>");
+        System.out.printf("sort - focusedSlot[%d]: %s\n", focusedSlot.id, focusedSlot.hasStack() ? focusedSlot.getStack().getName().getString() : "<EMPTY>");
         ScreenHandler container = gui.getScreenHandler();
         int limit = container.slots.size();
 
@@ -2852,12 +2854,24 @@ public class InventoryUtils
             }
 
             // This is ugly, but it stops infinite loops.
-            if (l != r && lastSwapTry.left() != l && lastSwapTry.right() != r)
+            if (l != r && repeatedSwaps < MAX_REPEATED)
             {
+                if ((lastSwapTry.left() == l && lastSwapTry.right() == r) ||
+                    (lastSwapTry.left() == r && lastSwapTry.right() == l))
+                {
+                    repeatedSwaps++;
+                    ItemScroller.logger.warn("quickSort: Item swap duplicate pair of [{}, {}], adding countdown -> [{}]", l, r, repeatedSwaps);
+                }
+                else
+                {
+                    // Reset
+                    repeatedSwaps = 0;
+                }
+
                 swapSlots(gui, l, r);
                 lastSwapTry = Pair.of(l, r);
             }
-            else if (l != r)
+            else if (l != r && repeatedSwaps > MAX_REPEATED)
             {
                 ItemScroller.logger.warn("quickSort: Item swap failure. Duplicate pair of [{}, {}], cancelling sort task", l, r);
                 return;
