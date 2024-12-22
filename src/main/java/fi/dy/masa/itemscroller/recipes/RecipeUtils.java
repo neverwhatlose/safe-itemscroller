@@ -57,11 +57,11 @@ public class RecipeUtils
             ItemStack lStack = left.get(lPos);
             Ingredient ri = right.get(i);
 
-            while (lStack.isEmpty())
+            while (lStack.isEmpty() && lPos < 9)
             {
                 lPos++;
                 lStack = left.get(lPos);
-                //System.out.printf("compare() [%d] left [%s] (Advance Left), right [%d]\n", lPos, lStack.toString(), i);
+                //System.out.printf(" compare() [%d] left [%s] (Advance Left), right [%d]\n", lPos, lStack.toString(), i);
             }
 
             List<RegistryEntry<Item>> rItems = ri.getMatchingItems();
@@ -69,7 +69,7 @@ public class RecipeUtils
 
             for (RegistryEntry<Item> rItem : rItems)
             {
-                //System.out.printf("compare() [%d] left [%s] / [%d] right [%s]\n", lPos, lStack, i, rItem.getIdAsString());
+                //System.out.printf(" compare() [%d] left [%s] / [%d] right [%s]\n", lPos, lStack, i, rItem.getIdAsString());
 
                 if (ri.test(lStack))
                 {
@@ -104,35 +104,35 @@ public class RecipeUtils
     {
         int i = 0;
 
-        //System.out.printf("DUMP [%s] -->\n", side);
+        System.out.printf("DUMP [%s] -->\n", side);
         for (ItemStack stack : stacks)
         {
-            //System.out.printf("%s[%d] // [%s]\n", side, i, stack.toString());
+            System.out.printf("%s[%d] // [%s]\n", side, i, stack.toString());
             i++;
         }
-        //System.out.printf("DUMP END [%s]\n", side);
+        System.out.printf("DUMP END [%s]\n", side);
     }
 
     private static void dumpIngs(List<Ingredient> ings, String side)
     {
         int i = 0;
 
-        //System.out.printf("DUMP [%s] -->\n", side);
+        System.out.printf("DUMP [%s] -->\n", side);
         for (Ingredient ing : ings)
         {
             List<RegistryEntry<Item>> items = ing.getMatchingItems();
 
-            //System.out.printf("%s[%d] //", side, i);
+            System.out.printf("%s[%d] //", side, i);
 
             for (RegistryEntry<Item> item : items)
             {
-                //System.out.printf(" [%s]", item.getIdAsString());
+                System.out.printf(" [%s]", item.getIdAsString());
             }
 
-            //System.out.print("// []\n");
+            System.out.print("// []\n");
             i++;
         }
 
-        //System.out.printf("DUMP END [%s]\n", side);
+        System.out.printf("DUMP END [%s]\n", side);
     }
 }
