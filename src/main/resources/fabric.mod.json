@@ -4,7 +4,7 @@
 	"name": "Item Scroller",
 	"version": "${mod_version}",
 
-	"description": "Move items in inventory GUIs by scrolling the mouse wheel or dragging over slots",
+	"description": "Move items in inventory GUIs by scrolling the mouse wheel or dragging over slots. Forked version of item scroller without villager utils",
 	"authors": [
 		"masa"
 	],
