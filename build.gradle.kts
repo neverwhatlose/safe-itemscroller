@@ -26,7 +26,7 @@ dependencies {
     modImplementation("com.github.sakura-ryoko:malilib:${project.property("malilib_version")}")
 
     // Fabric API. This is technically optional, but you probably want it anyway.
-    //modCompile("net.fabricmc.fabric-api:fabric-api:" + project.property("fabric_version"))
+    modCompileOnly("net.fabricmc.fabric-api:fabric-api:" + project.property("fabric_api_version"))
 
     modCompileOnly("com.terraformersmc:modmenu:${project.property("mod_menu_version")}")
 }

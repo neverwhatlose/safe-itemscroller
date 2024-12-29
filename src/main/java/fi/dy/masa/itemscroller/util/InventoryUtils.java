@@ -62,8 +62,6 @@ import fi.dy.masa.itemscroller.recipes.CraftingHandler;
 import fi.dy.masa.itemscroller.recipes.CraftingHandler.SlotRange;
 import fi.dy.masa.itemscroller.recipes.RecipePattern;
 import fi.dy.masa.itemscroller.recipes.RecipeStorage;
-import fi.dy.masa.itemscroller.villager.VillagerDataStorage;
-import fi.dy.masa.itemscroller.villager.VillagerUtils;
 
 public class InventoryUtils
 {
@@ -787,62 +785,6 @@ public class InventoryUtils
                 shiftClickSlot(merchantGui, slot.id);
             }
         }
-    }
-
-    public static void villagerTradeEverythingPossibleWithTrade(int visibleIndex)
-    {
-        if (GuiUtils.getCurrentScreen() instanceof MerchantScreen merchantGui)
-        {
-            MerchantScreenHandler handler = merchantGui.getScreenHandler();
-            Slot slot = handler.getSlot(2);
-            ItemStack sellItem = handler.getRecipes().get(visibleIndex).getSellItem().copy();
-
-            while (true)
-            {
-                VillagerUtils.switchToTradeByVisibleIndex(visibleIndex);
-                //tryMoveItemsToMerchantBuySlots(merchantGui, true);
-
-                // Not a valid recipe
-                //if (slot.hasStack() == false)
-                if (areStacksEqual(sellItem, slot.getStack()) == false)
-                {
-                    break;
-                }
-
-                shiftClickSlot(merchantGui, slot.id);
-
-                // No room in player inventory
-                if (slot.hasStack())
-                {
-                    break;
-                }
-            }
-
-            villagerClearTradeInputSlots();
-        }
-    }
-
-    public static boolean villagerTradeEverythingPossibleWithAllFavoritedTrades()
-    {
-        Screen screen = GuiUtils.getCurrentScreen();
-
-        if (screen instanceof MerchantScreen)
-        {
-            MerchantScreenHandler handler = ((MerchantScreen) screen).getScreenHandler();
-            IntArrayList favorites = VillagerDataStorage.getInstance().getFavoritesForCurrentVillager(handler).favorites;
-
-            for (int index = 0; index < favorites.size(); ++index)
-            {
-                VillagerUtils.switchToTradeByVisibleIndex(index);
-                villagerTradeEverythingPossibleWithTrade(index);
-            }
-
-            villagerClearTradeInputSlots();
-
-            return true;
-        }
-
-        return false;
     }
 
     private static boolean tryMoveSingleItemToOtherInventory(Slot slot,
