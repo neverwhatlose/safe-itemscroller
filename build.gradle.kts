@@ -11,10 +11,6 @@ repositories {
     maven("https://jitpack.io")
 }
 
-tasks.withType<Jar>().configureEach {
-    archiveBaseName.set("${project.property("mod_file_name")}-${project.property("minecraft_version_out")}")
-}
-
 
 dependencies {
     minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
@@ -32,14 +28,25 @@ dependencies {
 }
 
 group = "${project.property("group")}.${project.property("mod_id")}"
-tasks.withType<Jar>().configureEach {
-    archiveBaseName.set("${project.property("mod_file_name")}-${project.property("minecraft_version_out")}")
-}
+
 var version: String = project.property("mod_version") as String
 
-if (version.endsWith("-dev")) {
-    version += "." + SimpleDateFormat("yyyyMMdd.HHmmss").format(Date())
+tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
+    val modFileName = project.property("mod_file_name")
+    val minecraftVersion = project.property("minecraft_version_out")
+    val modVersion = project.property("mod_version")
+    val isDev = modVersion.toString().endsWith("-dev")
+
+    val buildDate = if (isDev) {
+        "-dev-" + SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())
+    } else {
+        ""
+    }
+
+    archiveBaseName.set("$modFileName-$minecraftVersion-$modVersion$buildDate")
+    destinationDirectory.set(file(layout.buildDirectory.dir("libs")))
 }
+
 
 // Process resources
 val processResources = tasks.named<Copy>("processResources") {
@@ -61,3 +68,4 @@ tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = true
     //isReproducibleFileOrder = true
 }
+
